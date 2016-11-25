@@ -64,7 +64,7 @@
                     principal-amounts (map #(- (first %) (second %)) (partition 2 1 (cons @@P remaining-amounts)))
                     interest-amounts (map #(- @@c %) principal-amounts)]
                   (vec
-                    (take-nth 12
+                    (take-nth 6
                       (map
                         #(zipmap [:months :principal :interest :remaining-amount] %)
                         (map vector months principal-amounts interest-amounts remaining-amounts)))))
