@@ -86,12 +86,14 @@ function redrawChart(data) {
     .append("path")
       .datum(data)
       .attr("class", "line")
-      .attr("d", line)
+      .attr("d", line);
 
   g.selectAll(".serie-2")
+    .attr("transform", "translate(6, 0)")
+    .selectAll("circle")
     .data(data)
     .enter().append("circle")
-      .attr("cx", function(d) {return x(d.months)})
+      .attr("cx", function(d) { return x(d.months)})
       .attr("cy", function(d) {return rightY(d["remaining-amount"]);})
       .attr("r", 3.5)
       .style("fill", "#000");
