@@ -26,6 +26,9 @@
 
 (defn is-valid [a] (and (not (js/isNaN a)) (> a 0)))
 
+(defn round [n]
+  (/ (.round js/Math (* n 100)) 100))
+
 (rf/reg-sub
   :payment
   (fn [db [_]]
@@ -41,7 +44,7 @@
                    n (* @@term 12);; Term in months
                    rp1en (exp rp1 n) ;; (1 + r)^n
                    L @@amount]
-               (* L (/ (* r rp1en) (- rp1en 1)))) ;; L(r(1 + r)^n / ((1 + r)^n - 1))
+               (round (* L (/ (* r rp1en) (- rp1en 1))))) ;; L(r(1 + r)^n / ((1 + r)^n - 1))
              "")))))
 
 (defn remaining-amount [P r c N] ;; P(1 + r)^n - c((1 + r)^n - 1 / r)
@@ -60,12 +63,12 @@
               (and (is-valid @@P) (is-valid @@rate) (is-valid @@c))
               (let [months (range 1 (* 12 @@term))
                     r (/ @@rate 1200)
-                    remaining-amounts (map #(remaining-amount @@P r @@c %) months)
-                    principal-amounts (map #(- (first %) (second %)) (partition 2 1 (cons @@P remaining-amounts)))
-                    interest-amounts (map #(- @@c %) principal-amounts)]
+                    remaining-amounts (map round (map #(remaining-amount @@P r @@c %) months))
+                    principal-amounts (map round (map #(- (first %) (second %)) (partition 2 1 (cons @@P remaining-amounts))))
+                    interest-amounts (map round (map #(- @@c %) principal-amounts))]
                   (vec
                     (take-nth 6
                       (map
-                        #(zipmap [:months :principal :interest :remaining-amount] %)
+                        #(zipmap [:months :principal :interest :remaining] %)
                         (map vector months principal-amounts interest-amounts remaining-amounts)))))
               [])))))

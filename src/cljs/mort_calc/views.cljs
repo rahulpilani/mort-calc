@@ -11,7 +11,6 @@
         remaining-amounts (rf/subscribe [:remaining-amounts])]
     (fn []
       (js/redrawChart (clj->js @@remaining-amounts))
-      (.log js/console (clj->json @@remaining-amounts))
       [:div
         [:div
           [:input.form-control

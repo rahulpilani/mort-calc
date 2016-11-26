@@ -18,10 +18,10 @@ var rightY = d3.scaleLinear()
 
 var line = d3.line()
     .x(function(d) { return x(d.months); })
-    .y(function(d) { return rightY(d["remaining-amount"]); });
+    .y(function(d) { return rightY(d.remaining); });
 
 var z = d3.scaleOrdinal()
-    .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+    .range(["#98abc5", "#8a89a6", "#000", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
 
 var stack = d3.stack();
 
@@ -41,31 +41,60 @@ g.append("g")
     .attr("fill", "#000")
     .text("$");
 
+var defaultLegend = ["Principal", "Interest", "Remaining Loan"];
 var legend = h.selectAll(".legend")
-  .data(["principal", "interest"])
+  .data(defaultLegend)
   .enter().append("g")
-    .attr("class", "legend")
-    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; })
-    .style("font", "10px sans-serif");
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(" + i*80 + ", " + height + ")"; })
+      .style("font", "10px sans-serif");
+
+legend.selectAll("text")
+  .text(function(d) { return d; });
 
 legend.append("rect")
-    .attr("x", width)
-    .attr("y", height + 50)
+    .attr("x", 50)
+    .attr("y", 60)
     .attr("width", 18)
     .attr("height", 18)
     .attr("fill", z);
 
 legend.append("text")
-    .attr("x", width - 6)
-    .attr("y", height + 59)
+    .attr("x", 75)
+    .attr("y", 69)
     .attr("dy", ".35em")
-    .attr("text-anchor", "end")
+    .attr("text-anchor", "start")
+    .attr("class", "legend-text")
     .text(function(d) { return d; });
+
+legend.exit().remove();
+
+function updateLegend(d) {
+  var l = h.selectAll("text.legend-text")
+    .data(d)
+    .text(function (d) { return d; });
+}
+
+function mapToDollar(d) {
+  var principal = formatter.format(d.data.principal);
+  var interest = formatter.format(d.data.interest);
+  var remaining = formatter.format(d.data.remaining);
+
+  return [principal, interest, remaining];
+}
+
+var formatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+});
 
 function redrawChart(data) {
   x.domain(data.map(function(d) { return d.months; }));
-  leftY.domain([0, d3.max(data, function(d) { return d.principal; })]).nice();
-  rightY.domain([0, d3.max(data, function(d) { return d["remaining-amount"]; })]).nice();
+  console.log("rightY Domain: " + d3.max(data, function(d) { return d.remaining; }));
+  console.log("leftY Domain: " + d3.max(data, function(d) { return d.principal; }));
+  leftY.domain([0, d3.max(data, function(d) { return d.principal; })]);
+  rightY.domain([0, d3.max(data, function(d) { return d.remaining; })]);
   z.domain(["principal", "interest"]);
 
   g.selectAll(".serie")
@@ -76,30 +105,46 @@ function redrawChart(data) {
       .selectAll("rect")
       .data(function(d) { return d; })
         .enter().append("rect")
+        .attr("class", "chart")
         .attr("x", function(d) { return x(d.data.months); })
         .attr("y", function(d) { return leftY(d[1]); })
         .attr("height", function(d) { return leftY(d[0]) - leftY(d[1]); })
         .attr("width", x.bandwidth());
 
-  g.append("g")
-    .attr("class", "serie-2")
-    .append("path")
-      .datum(data)
-      .attr("class", "line")
-      .attr("d", line);
+  g.selectAll(".serie")
+    .data(stack.keys(["principal", "interest"])(data))
+    .selectAll("rect")
+    .data(function(d) { return d; })
+      .on('mouseover', function(d) { updateLegend(mapToDollar(d))})
+      .on('mouseout', function(d) { updateLegend(defaultLegend)});
+
+
+      g.select("path.line")
+          .datum(data)
+          .attr("d", function(d) { return line(d); });
 
   g.selectAll(".serie-2")
+    .data([6])
+    .enter().append("g")
+      .attr("class", "serie-2")
+      .attr("transform", "translate(6, 0)")
+      .append("path").attr("class", "line").datum(data).attr("d", line);
+
+      g.selectAll("g.serie-2")
+        .selectAll("circle")
+        .data(data)
+        .attr("cx", function(d) { return x(d.months)})
+        .attr("cy", function(d) {return rightY(d.remaining);});
+
+  g.selectAll("g.serie-2")
     .attr("transform", "translate(6, 0)")
     .selectAll("circle")
     .data(data)
     .enter().append("circle")
       .attr("cx", function(d) { return x(d.months)})
-      .attr("cy", function(d) {return rightY(d["remaining-amount"]);})
+      .attr("cy", function(d) {return rightY(d.remaining);})
       .attr("r", 3.5)
       .style("fill", "#000");
-
-
-
 
   g.selectAll("g.axis--y")
     .call(d3.axisLeft(leftY).ticks(10, "s"));

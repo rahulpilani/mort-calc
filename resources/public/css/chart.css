@@ -3,3 +3,18 @@
   stroke: black;
   stroke-width: 1.5px;
 }
+.circleBase {
+    border-radius: 50%;
+    width: 8px;
+    height: 8px;
+}
+
+.principal {
+  background: yellow;
+}
+.interest {
+  background: purple;
+}
+.remaining {
+  background: black;
+}
