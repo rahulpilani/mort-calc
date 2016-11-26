@@ -127,6 +127,15 @@ function redrawChart(data) {
 
     g.selectAll(".serie")
         .data(stack.keys(["principal", "interest"])(data))
+        .selectAll("rect")
+        .data(function(d) {
+            return d;
+        })
+        .exit()
+        .attr("visibility", "hidden");
+
+    g.selectAll(".serie")
+        .data(stack.keys(["principal", "interest"])(data))
         .enter().append("g")
           .attr("class", "serie")
           .attr("fill", function(d) {
@@ -147,7 +156,9 @@ function redrawChart(data) {
           .attr("height", function(d) {
               return leftY(d[0]) - leftY(d[1]);
           })
+          .attr("visibility", "")
           .attr("width", x.bandwidth());
+
 
     g.selectAll(".serie")
         .data(stack.keys(["principal", "interest"])(data))
@@ -155,12 +166,14 @@ function redrawChart(data) {
         .data(function(d) {
             return d;
         })
+        .attr("visibility", "")
         .on('mouseover', function(d) {
             updateLegend(mapToDollar(d))
         })
         .on('mouseout', function(d) {
             updateLegend(defaultLegend)
         });
+
 
 
     g.select("path.line")
@@ -177,7 +190,7 @@ function redrawChart(data) {
         .append("path").attr("class", "line").datum(data).attr("d", line);
 
     g.selectAll("g.serie-2")
-        .selectAll("circle")
+        .selectAll("circle.line")
         .data(data)
         .attr("cx", function(d) {
             return x(d.months)
@@ -191,6 +204,7 @@ function redrawChart(data) {
         .selectAll("circle")
         .data(data)
         .enter().append("circle")
+        .attr("class", "line")
         .attr("cx", function(d) {
             return x(d.months)
         })
@@ -199,6 +213,10 @@ function redrawChart(data) {
         })
         .attr("r", 3.5)
         .style("fill", "#000");
+
+    g.selectAll("circle.line")
+      .data(data)
+      .exit().remove();
 
     g.selectAll("g.axis--y")
         .call(d3.axisLeft(leftY).ticks(10, "s"));
