@@ -11,7 +11,7 @@ var svg = d3.select("svg"),
     h = svg.append("g");
 
 var x = d3.scaleBand()
-    .rangeRound([0, width])
+    .range([0, width])
     .padding(0.2)
     .align(0.5);
 
@@ -37,7 +37,7 @@ var stack = d3.stack();
 g.append("g")
     .attr("class", "axis axis--x")
     .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x).ticks(10));
+    .call(d3.axisBottom(x).ticks(10).tickFormat(d3.timeFormat("%Y-%m")));
 
 g.append("g")
     .attr("class", "axis axis--y")
@@ -221,5 +221,11 @@ function redrawChart(data) {
     g.selectAll("g.axis--y")
         .call(d3.axisLeft(leftY).ticks(10, "s"));
     g.selectAll("g.axis--x")
-        .call(d3.axisBottom(x).ticks(10));
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+          .style("text-anchor", "end")
+          .attr("dx", "-.8em")
+          .attr("dy", "-.55em")
+          .attr("transform", "translate(6, 0), rotate(-45)" )
+          .text(function (d) {return d3.timeFormat("%m/%y")(d);});
 }

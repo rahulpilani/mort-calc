@@ -10,6 +10,7 @@
         payment (rf/subscribe [:payment])
         remaining-amounts (rf/subscribe [:remaining-amounts])]
     (fn []
+      (.log js/console remaining-amounts)
       (js/redrawChart (clj->js @@remaining-amounts))
       [:div
         [:div

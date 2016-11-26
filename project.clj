@@ -2,7 +2,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.229"]
                  [reagent "0.6.0"]
-                 [reagent-forms "0.5.28"]
+                 [com.andrewmcveigh/cljs-time "0.4.0"]
                  [re-frame "0.8.0"]]
 
   :plugins [[lein-cljsbuild "1.1.4"]]

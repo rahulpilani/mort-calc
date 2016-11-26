@@ -1,6 +1,9 @@
 (ns mort-calc.subs
     (:require-macros [reagent.ratom :refer [reaction]])
-    (:require [re-frame.core :as rf]))
+    (:require
+      [re-frame.core :as rf]
+      [cljs-time.core :as t]))
+
 
 
 (rf/reg-sub
@@ -63,6 +66,7 @@
               (and (is-valid @@P) (is-valid @@rate) (is-valid @@c))
               (let [months (range 1 (* 12 @@term))
                     r (/ @@rate 1200)
+                    dates (map #(t/plus (t/today) (t/months %)) months)
                     remaining-amounts (map round (map #(remaining-amount @@P r @@c %) months))
                     principal-amounts (map round (map #(- (first %) (second %)) (partition 2 1 (cons @@P remaining-amounts))))
                     interest-amounts (map round (map #(- @@c %) principal-amounts))]
@@ -70,5 +74,5 @@
                     (take-nth 6
                       (map
                         #(zipmap [:months :principal :interest :remaining] %)
-                        (map vector months principal-amounts interest-amounts remaining-amounts)))))
+                        (map vector dates principal-amounts interest-amounts remaining-amounts)))))
               [])))))
