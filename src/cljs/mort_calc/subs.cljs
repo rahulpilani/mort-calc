@@ -4,7 +4,7 @@
       [re-frame.core :as rf]
       [cljs-time.core :as t]))
 
-
+;;
 
 (rf/reg-sub
   :amount

@@ -15,5 +15,10 @@
   [db [_ rate]]
   (assoc-in db [:borrow-data :rate] rate))
 
+(defn handle-term-changed
+  [db [_ term]]
+  (assoc-in db [:borrow-data :term] term))
+
 (rf/reg-event-db :amount-changed handle-amount-changed)
 (rf/reg-event-db :rate-changed handle-rate-changed)
+(rf/reg-event-db :term-changed handle-term-changed)
