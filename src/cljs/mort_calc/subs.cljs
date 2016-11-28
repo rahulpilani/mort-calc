@@ -21,16 +21,65 @@
   (fn [db [_]]
       (reaction (get-in db [:borrow-data :term]))))
 
-(rf/reg-sub :int-amount (fn [db [_]] (let [amount (rf/subscribe [:amount])](reaction (js/parseInt @@amount)))))
+(rf/reg-sub
+  :home-value
+  (fn [db [_]]
+      (reaction (get-in db [:home :value]))))
+
+(rf/reg-sub
+  :property-tax
+  (fn [db [_]]
+      (reaction (get-in db [:home :property-tax]))))
+
+(rf/reg-sub
+  :hoa
+  (fn [db [_]]
+      (reaction (get-in db [:home :hoa]))))
+
+(rf/reg-sub
+  :start-date
+  (fn [db [_]]
+      (reaction (get-in db [:home :start-date]))))
+
+(rf/reg-sub :int-amount (fn [db [_]] (let [amount (rf/subscribe  [:amount])](reaction (js/parseInt @@amount)))))
 (rf/reg-sub :float-rate (fn [db [_]] (let [rate (rf/subscribe [:rate])](reaction (js/parseFloat @@rate)))))
 (rf/reg-sub :int-term (fn [db [_]] (let [term (rf/subscribe [:term])](reaction (js/parseInt @@term)))))
+(rf/reg-sub :int-hoa (fn [db [_]] (let [hoa (rf/subscribe [:hoa])](reaction (js/parseInt @@hoa)))))
+(rf/reg-sub :int-home-value (fn [db [_]] (let [home-value (rf/subscribe [:home-value])](reaction (js/parseInt @@home-value)))))
+(rf/reg-sub :float-property-tax (fn [db [_]] (let [property-tax (rf/subscribe [:property-tax])](reaction (js/parseFloat @@property-tax)))))
 
 (defn exp [a b] (.pow js/Math a b))
 
-(defn is-valid [a] (and (not (js/isNaN a)) (> a 0)))
+(defn is-valid [a] (and (not (js/isNaN a)) (>= a 0)))
 
 (defn round [n]
   (/ (.round js/Math (* n 100)) 100))
+
+(rf/reg-sub
+  :taxes-and-fees
+  (fn [db [_]]
+    (let [hoa (rf/subscribe [:int-hoa])
+          property-tax (rf/subscribe [:float-property-tax])
+          home-value (rf/subscribe [:home-value])
+          property-tax-pct (/ @@property-tax 1200)]
+      (do
+        (.log js/console (str "HOA: " @@hoa " Tax: " property-tax-pct " Home Value: " @@home-value))
+        (reaction
+          (if
+            (and (is-valid @@hoa) (is-valid property-tax-pct) (is-valid @@home-value))
+            (round (+ @@hoa (* @@home-value property-tax-pct)))
+            ""))))))
+
+(rf/reg-sub
+  :total-payment
+  (fn [db [_]]
+    (let [taxes-and-fees (rf/subscribe [:taxes-and-fees])
+          payment (rf/subscribe [:payment])]
+      (reaction
+        (if
+          (and (is-valid @@taxes-and-fees) (is-valid @@payment))
+          (round (+ @@taxes-and-fees @@payment))
+          "")))))
 
 (rf/reg-sub
   :payment
