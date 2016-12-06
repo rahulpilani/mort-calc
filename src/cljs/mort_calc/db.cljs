@@ -8,6 +8,7 @@
         :rate "3.625"
         :term "30"
         :additional-payment "0"
+        :current-month "1"
         :pmi "0"}
     :home
       {

@@ -4,8 +4,8 @@
 
 (rf/reg-event-db
  :initialize-db
- (fn  [_ _]
-   db/default-db))
+ (fn [_ _]
+    db/default-db))
 
 (defn handle-amount-changed
   [db [_ amount]]

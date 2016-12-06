@@ -4,3 +4,4 @@
 /resources/public/js/compiled
 out
 .DS_Store
+.lein-repl-history

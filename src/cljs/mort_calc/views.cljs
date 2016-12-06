@@ -29,7 +29,7 @@
         [:div.ui.labeled.input
           [:div.ui.label left-label]
           [:input
-            {:placeholder place-holder :id id :value @@sub :on-change (dispatch event-key)}]]])))
+            {:placeholder place-holder :id id :value @sub :on-change (dispatch event-key)}]]])))
 
 (defn right-labeled-field [id label place-holder event-key right-label]
   (let [sub (rf/subscribe [id])]
@@ -38,15 +38,16 @@
         [:label label]
         [:div.ui.right.labeled.input
           [:input
-            {:placeholder place-holder :id id :value @@sub :on-change (dispatch event-key)}]
+            {:placeholder place-holder :id id :value @sub :on-change (dispatch event-key)}]
           [:div.ui.label right-label]]])))
 
 (defn statistic [id label]
   (let [sub (rf/subscribe [id])]
     (fn []
-      [:div.ui.small.statistic
+      (.log js/console @sub)
+      [:div.ui.statistic
         [:div.value
-          [:span (format  @@sub)]]
+          [:span (format @sub)]]
         [:div.label label]])))
 
 
@@ -95,25 +96,30 @@
 (defn statistics []
   (fn []
     ; [:div.ui.three.statistics]
-    [:div
+    [:div.ui.three.small.statistics
       [monthly-mortgage-payment]
       [taxes-and-fees]
       [total-payment]]))
 
+; (defn main-panel []
+;   (let [amount (rf/subscribe [:amount])]
+;     (fn []
+;       (.log js/console (get-in amount [:borrow-data :amount]))
+;       [:div (get-in amount [:borrow-data :amount])])))
+
+
 (defn main-panel []
-  (let [remaining-amounts (rf/subscribe [:remaining-amounts])]
-    (fn []
-      (js/redrawChart (clj->js @@remaining-amounts))
-      [:div
-        [:div.ui.grid
-          [:div.two.column.centered.row
-            [:div.column.five.wide
-              [:div.ui.segment
-                [loan-form]]]
-            [:div.column.eleven.wide
-              [:div.ui.segment
-                [:div.ui.dividing.header "Payment"]
-                [:div.ui.grid
-                  [:div.one.column.row
-                    [:div.column.center.aligned
-                      [statistics]]]]]]]]])))
+   (fn []
+     [:div
+       [:div.ui.grid
+         [:div.two.column.centered.row
+           [:div.column.five.wide
+             [:div.ui.segment
+               [loan-form]]]
+           [:div.column.eleven.wide
+             [:div.ui.segment
+               [:div.ui.dividing.header "Payment"]
+               [:div.ui.grid
+                 [:div.one.column.row
+                   [:div.column.center.aligned
+                     [statistics]]]]]]]]]))
