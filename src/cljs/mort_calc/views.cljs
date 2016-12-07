@@ -16,9 +16,8 @@
     (rf/dispatch [key (target-value t)])))
 
 (def formatter (.NumberFormat. js/Intl "en-US" (js-obj {"style" "currency" "currency" "USD" "maximumFractionDigits" 1})))
-(defn format
-  [num]
-  (.format formatter num))
+(defn format [num]
+  (if (= num "") "" (.format formatter num)))
 
 
 (defn left-labeled-field [id label place-holder event-key left-label]
@@ -29,7 +28,7 @@
         [:div.ui.labeled.input
           [:div.ui.label left-label]
           [:input
-            {:placeholder place-holder :id id :value @sub :on-change (dispatch event-key)}]]])))
+            {:placeholder place-holder :id id :value (format @sub) :on-change (dispatch event-key)}]]])))
 
 (defn right-labeled-field [id label place-holder event-key right-label]
   (let [sub (rf/subscribe [id])]
@@ -69,6 +68,14 @@
 (defn home-value []
   (left-labeled-field :home-value "Home Value" "Home Value" :value-changed "$"))
 
+(defn additional-payment []
+  (left-labeled-field :additional-payment "Extra Payment" "Extra Payment" :additional-payment-changed "$"))
+
+(defn slider []
+  (let [value (rf/subscribe [:amount])]
+    (fn []
+      [:input {:type "range" :value @value :min 1000 :max 3000000 :step 10000 :on-change (dispatch :amount-changed)}])))
+
 (defn loan-form []
   (fn []
     [:form.ui.form
@@ -79,10 +86,13 @@
       [:div.two.fields
         [interest-rate]
         [loan-term]]
-      [:div.ui.dividing.header "Taxes & Fees"]
+      [:div.ui.dividing.header "Additional Expenses"]
       [:div.two.fields
         [property-tax]
-        [hoa]]]))
+        [hoa]]
+      [:div.one.fields
+        [additional-payment]]
+      [slider]]))
 
 (defn monthly-mortgage-payment []
   (statistic :payment "Monthly Mortgage"))
