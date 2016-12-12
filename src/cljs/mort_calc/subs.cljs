@@ -5,12 +5,19 @@
       [cljs-time.core :as t]))
 
 ;;
+(defn parse-num [f a]
+  (if (not= a "")
+    (let [converted (f a)]
+      (if (js/isNaN converted)
+        0
+        converted))
+    ""))
 
 (defn parse-int [a]
-  (if (not= a "") (js/parseInt a) ""))
+  (parse-num js/parseInt a))
 
 (defn parse-float [a]
-  (if (not= a "") (js/parseFloat a) ""))
+  (parse-num js/parseFloat a))
 
 (defn log-and-return [l x & m]
   (do
@@ -67,6 +74,12 @@
     (parse-float (get-in db [:borrow-data :rate]))))
 
 (rf/reg-sub
+  :rate-str
+  (fn [db [_]]
+    (get-in db [:borrow-data :rate])))
+
+
+(rf/reg-sub
   :term
   (fn [db [_]]
     (parse-int (get-in db [:borrow-data :term]))))
@@ -90,6 +103,12 @@
   :property-tax
   (fn [db [_]]
     (parse-float (get-in db [:home :property-tax]))))
+
+(rf/reg-sub
+  :property-tax-str
+  (fn [db [_]]
+    (get-in db [:home :property-tax])))
+
 
 (rf/reg-sub
   :hoa

@@ -11,6 +11,14 @@
 (defn target-value [t]
   (-> t .-target .-value))
 
+(defn is-valid [validators value]
+  (reduce #(and %1 %2) true (map validators #(% value))))
+
+(defn annotation-class [is-valid]
+  (if is-valid
+    "error"
+    ""))
+
 (defn dispatch [key]
   (fn [t]
     (rf/dispatch [key (target-value t)])))
@@ -19,21 +27,22 @@
 (defn format [num]
   (if (= num "") "" (.format formatter num)))
 
+(def percentage-validator #(<= (js/parseFloat %) 100))
 
-(defn left-labeled-field [id label place-holder event-key left-label]
+(defn left-labeled-field [id label place-holder event-key left-label & validators]
   (let [sub (rf/subscribe [id])]
     (fn []
-      [:div.field
+      [:div.field {:class (annotation-class (is-valid validators @sub))}
         [:label label]
         [:div.ui.labeled.input
           [:div.ui.label left-label]
           [:input
             {:placeholder place-holder :id id :value (format @sub) :on-change (dispatch event-key)}]]])))
 
-(defn right-labeled-field [id label place-holder event-key right-label]
+(defn right-labeled-field [id label place-holder event-key right-label & validators]
   (let [sub (rf/subscribe [id])]
     (fn []
-      [:div.field
+      [:div.field {:class (annotation-class (is-valid validators @sub))}
         [:label label]
         [:div.ui.right.labeled.input
           [:input
@@ -51,10 +60,10 @@
 
 
 (defn interest-rate []
-  (right-labeled-field :rate "Interest" "Interest Rate" :rate-changed "%"))
+  (right-labeled-field :rate-str "Interest" "Interest Rate" :rate-changed "%"))
 
 (defn property-tax []
-  (right-labeled-field :property-tax "Property Tax" "Property Tax" :property-tax-changed "%"))
+  (right-labeled-field :property-tax-str "Property Tax" "Property Tax" :property-tax-changed "%"))
 
 (defn hoa []
   (right-labeled-field :hoa "HOA" "HOA" :hoa-changed "$/Month"))
