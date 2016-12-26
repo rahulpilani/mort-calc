@@ -144,16 +144,21 @@
 
 (def payment-fills ["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"])
 (def payment-labels ["Principal" "Interest" "Property Tax" "HOA" "Additional Payment"])
+(def year-month-formatter (f/formatter "MMM yyyy"))
+
+
 (defn payment-slices [payment-info]
   (let [values (get payment-info :payment-breakdown)
         cumulative (reductions + 0 values)
         zipped (map vector values cumulative)
         indexed (map-indexed vector zipped)
         total (reduce + values)]
+    (.log js/console (clj->js zipped))
     [:g {:transform "translate(75, 75)"}
       (for [item indexed]
         (let [[index [increment start]] item]
           (payment-slice index increment start total (get payment-fills index))))]))
+
 (defn payment-legend [payment-info]
   (let [values (get payment-info :payment-breakdown)
         total (reduce + values)
@@ -166,40 +171,39 @@
                           [:text {:y (str (* index 1) "em") :x "1em"}
                             (get payment-labels index)]]))]))
 
-
-
-(def year-month-formatter (f/formatter "MMM yyyy"))
-
-(defn donut-chart []
-  (let [all-payments (rf/subscribe [:all-payments])
-        current-month (rf/subscribe [:current-month])]
-    (fn []
-      [:div.chart
-       [:svg {:width 350 :height 150}
-        [payment-slices (get @all-payments @current-month)]
-        [payment-legend (get @all-payments @current-month)]]])))
-
-(defn year-label []
+(defn payment-drilldown []
   (let [all-payments (rf/subscribe [:all-payments])
         current-month (rf/subscribe [:current-month])]
     (fn []
       (let [payment-info (get @all-payments @current-month)]
-        [:a.ui.red.ribbon.label (f/unparse-local-date year-month-formatter (get payment-info :date))]))))
-(defn time-stats []
-  (let [all-payments (rf/subscribe [:all-payments])
-        current-month (rf/subscribe [:current-month])]
-    (fn []
-      (let [payment-info (get @all-payments @current-month)]
-        (.log js/console "Payment Info" (clj->js payment-info))
-        [:div
-          [:table.ui.definition.table
-            [:tbody
-              [:tr
-                [:td "Remaining Amount"]
-                [:td (format (get payment-info :remaining-amount))]]
-              [:tr
-                [:td "Interest Paid"]
-                [:td (format (get payment-info :total-interest))]]]]]))))
+        [:div.ui.segment
+          [:div.ui.dividing.header
+            "Forecast"]
+;;(f/unparse-local-date year-month-formatter (get payment-info :date))
+          [:div.ui.grid
+            [:div.two.column.row
+              [:div.column
+                [:div
+                  [:h2.ui.center.aligned.header
+                    (f/unparse-local-date year-month-formatter (get payment-info :date))  ]
+                  [:table.ui.definition.table
+                    [:tbody
+                      [:tr
+                        [:td "Remaining Amount"]
+                        [:td (format (get payment-info :remaining-amount))]]
+                      [:tr
+                        [:td "Interest Paid"]
+                        [:td (format (get payment-info :total-interest))]]]]]]
+              [:div.column
+                [:div.chart
+                 [:svg {:width 350 :height 150}
+                  [payment-slices payment-info]
+                  [payment-legend payment-info]]]]]]]))))
+
+
+
+
+
 
 
 (defn main-panel []
@@ -211,19 +215,16 @@
              [:div.ui.segment
                [loan-form]]]
            [:div.column.eleven.wide
-             [:div.ui.segment
-               [:div.ui.dividing.header "Payment"]
-               [:div.ui.grid
-                 [:div.one.column.row
-                  [:div.column.center.aligned
-                    [statistics]]]
-                 [:div.one.column.row
-                   [:div.column.center.aligned
-                     [:div.ui.segment
-                       [year-label]
-                       [:div.ui.grid
-                         [:div.two.column.row
-                          [:div.column
-                            [time-stats]]
-                          [:div.column.center.aligned
-                            [donut-chart]]]]]]]]]]]]]))
+             [:div.one.column.row
+               [:div.column
+                 [:div.ui.segment
+                   [:div.ui.dividing.header "Payment"]
+                   [:div.ui.grid
+                     [:div.one.column.row
+                      [:div.column.center.aligned
+                        [statistics]]]]]]]
+             [:div.one.column.row
+               [:div.column]]
+             [:div.one.column.row
+               [:div.column
+                 [payment-drilldown]]]]]]]))
