@@ -42,6 +42,10 @@
   [db [_ additional-payment]]
   (assoc-in db [:borrow-data :additional-payment] (sanitize-integer additional-payment)))
 
+(defn handle-current-month-changed
+  [db [_ current-month]]
+  (assoc-in db [:borrow-data :current-month] (sanitize-integer current-month)))
+
 (rf/reg-event-db :amount-changed handle-amount-changed)
 (rf/reg-event-db :rate-changed handle-rate-changed)
 (rf/reg-event-db :term-changed handle-term-changed)
@@ -49,3 +53,4 @@
 (rf/reg-event-db :property-tax-changed handle-property-tax-changed)
 (rf/reg-event-db :hoa-changed handle-hoa-changed)
 (rf/reg-event-db :additional-payment-changed handle-additional-payment-changed)
+(rf/reg-event-db :current-month-changed handle-current-month-changed)

@@ -84,9 +84,18 @@
   (left-labeled-field :additional-payment "Extra Payment" "Extra Payment" :additional-payment-changed "$"))
 
 (defn slider []
-  (let [value (rf/subscribe [:amount])]
+  (let [value (rf/subscribe [:amount])
+        current-month (rf/subscribe [:current-month])]
     (fn []
-      [:input {:type "range" :value @value :min 1000 :max 3000000 :step 10000 :on-change (dispatch :amount-changed)}])))
+      [:div.slider
+        [:input {:id "amount-slider" :type "range" :value @value :min 1000 :max 3000000 :step 10000 :on-change (dispatch :amount-changed)}]])))
+
+(defn forecast-slider []
+  (let [all-payments (rf/subscribe [:all-payments])
+        current-month (rf/subscribe [:current-month])]
+    (fn []
+      [:div.slider
+        [:input {:id "forecast-slider" :type "range" :value @current-month :min 1 :max (count @all-payments) :step 1 :on-change (dispatch :current-month-changed)}]])))
 
 (defn loan-form []
   (fn []
@@ -153,7 +162,6 @@
         zipped (map vector values cumulative)
         indexed (map-indexed vector zipped)
         total (reduce + values)]
-    (.log js/console (clj->js zipped))
     [:g {:transform "translate(75, 75)"}
       (for [item indexed]
         (let [[index [increment start]] item]
@@ -175,8 +183,9 @@
   (let [all-payments (rf/subscribe [:all-payments])
         current-month (rf/subscribe [:current-month])]
     (fn []
-      (let [payment-info (get @all-payments @current-month)]
-        [:div.ui.segment
+      (let [payment-info (get @all-payments @current-month)
+            months (keys @all-payments)]
+        [:div.ui.segment.forecast
           [:div.ui.dividing.header
             "Forecast"]
 ;;(f/unparse-local-date year-month-formatter (get payment-info :date))
@@ -185,9 +194,15 @@
               [:div.column
                 [:div
                   [:h2.ui.center.aligned.header
-                    (f/unparse-local-date year-month-formatter (get payment-info :date))  ]
+                    (f/unparse-local-date year-month-formatter (get payment-info :date))]
                   [:table.ui.definition.table
                     [:tbody
+                      [:tr
+                        [:td "Principal"]
+                        [:td (format (get (get payment-info :payment-breakdown) 0))]]
+                      [:tr
+                        [:td "Interest"]
+                        [:td (format (get (get payment-info :payment-breakdown) 1))]]
                       [:tr
                         [:td "Remaining Amount"]
                         [:td (format (get payment-info :remaining-amount))]]
@@ -198,7 +213,11 @@
                 [:div.chart
                  [:svg {:width 350 :height 150}
                   [payment-slices payment-info]
-                  [payment-legend payment-info]]]]]]]))))
+                  [payment-legend payment-info]]]]]]
+          [:div.one.column.row
+            [:div.column
+              [forecast-slider]]]]))))
+
 
 
 
@@ -212,12 +231,12 @@
        [:div.ui.grid
          [:div.two.column.centered.row
            [:div.column.five.wide
-             [:div.ui.segment
+             [:div.ui.segment.form
                [loan-form]]]
            [:div.column.eleven.wide
              [:div.one.column.row
                [:div.column
-                 [:div.ui.segment
+                 [:div.ui.segment.payment
                    [:div.ui.dividing.header "Payment"]
                    [:div.ui.grid
                      [:div.one.column.row
