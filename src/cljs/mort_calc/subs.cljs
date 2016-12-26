@@ -21,7 +21,7 @@
 
 (defn log-and-return [l x & m]
   (do
-    (.log js/console (str l ": ") x m)
+    (.log js/console (str l ": ") x (clj->js m))
     x))
 (defn exp [a b] (.pow js/Math a b))
 
@@ -30,10 +30,15 @@
 (defn round [n]
   (/ (.round js/Math (* n 100)) 100))
 
-(defn taxes-and-fees [home-value hoa property-tax-pct]
+(defn find-property-tax [home-value property-tax-pct]
+  (if (and (is-valid home-value) (is-valid property-tax-pct))
+    (* home-value property-tax-pct)
+    ""))
+
+(defn taxes-and-fees [hoa property-tax-amount]
   (if
-    (and (is-valid hoa) (is-valid property-tax-pct) (is-valid home-value))
-    (round (+ hoa (* home-value property-tax-pct)))
+    (and (is-valid hoa) (is-valid property-tax-amount))
+    (round (+ hoa property-tax-amount))
     ""))
 
 (defn payment [amount term r]
@@ -43,9 +48,7 @@
           n (* term 12);; Term in months
           rp1en (exp rp1 n) ;; (1 + r)^n
           L amount]
-      (do
-        (.log js/console amount r term rp1 n rp1en L)
-        (round (* L (/ (* r rp1en) (- rp1en 1)))))) ;; L(r(1 + r)^n / ((1 + r)^n - 1))
+        (round (* L (/ (* r rp1en) (- rp1en 1))))) ;; L(r(1 + r)^n / ((1 + r)^n - 1))
     ""))
 
 (defn total-payment [taxes-and-fees payment additional-payment]
@@ -83,6 +86,14 @@
   :term
   (fn [db [_]]
     (parse-int (get-in db [:borrow-data :term]))))
+
+(rf/reg-sub
+  :term-months
+  :<- [:term]
+  (fn [term [_]]
+    (if (is-valid term)
+      (* 12 term)
+      0)))
 
 (rf/reg-sub
   :current-month
@@ -133,12 +144,19 @@
     (/ rate 1200)))
 
 (rf/reg-sub
-  :taxes-and-fees
+  :property-tax-amount
   :<- [:home-value]
-  :<- [:hoa]
   :<- [:property-tax-pct]
-  (fn [[home-value hoa property-tax-pct] [_]]
-    (let [taxes-and-fees (taxes-and-fees home-value hoa property-tax-pct)]
+  (fn [[home-value property-tax-pct] [_]]
+    (let [property-tax-amount (find-property-tax home-value property-tax-pct)]
+      (log-and-return "Property Tax" property-tax-amount home-value property-tax-pct))))
+
+(rf/reg-sub
+  :taxes-and-fees
+  :<- [:property-tax-amount]
+  :<- [:hoa]
+  (fn [[property-tax-amount hoa] [_]]
+    (let [taxes-and-fees (taxes-and-fees hoa property-tax-amount)]
       (log-and-return "Taxes and Fees" taxes-and-fees))))
 
 (rf/reg-sub
@@ -161,14 +179,25 @@
     (let [payment (payment amount term r)]
       (log-and-return "Payment" payment))))
 
+(defn payment-dict [hoa property-tax additional-payment]
+  (fn [values]
+    (let [[date month remaining-amount principal interest total-interest] values]
+      {:date date
+       :month month
+       :remaining-amount remaining-amount
+       :payment-breakdown [principal interest property-tax hoa additional-payment]
+       :total-interest total-interest})))
+
 (rf/reg-sub
-  :payment-breakdown
+  :all-payments
   :<- [:amount]
   :<- [:payment]
-  :<- [:current-month]
+  :<- [:term-months]
   :<- [:rate-pct]
   :<- [:additional-payment]
-  (fn [P c N r additional-payment]
+  :<- [:hoa]
+  :<- [:property-tax-amount]
+  (fn [[P c N r additional-payment hoa property-tax-amount] [_]]
     (if
       (and (is-valid P) (is-valid r) (is-valid c) (is-valid N))
       (let [months (range 1 (+ 1 N))
@@ -178,10 +207,8 @@
             remaining-amounts (vec (filter gt-zero (map round (map #(remaining-amount P r t %) months))))
             principal-amounts (vec (filter gt-zero (map round (map #(- (first %) (second %)) (partition 2 1 (cons P remaining-amounts))))))
             interest-amounts (vec (filter gt-zero (map round (map #(- t %) principal-amounts))))
-            total-interest (reduce + interest-amounts)]
-        {
-          :date (last (take (count remaining-amounts) dates))
-          :remaining-amount (last remaining-amounts)
-          :principal (- (last principal-amounts) a)
-          :interest (last interest-amounts)
-          :total-interest total-interest}))))
+            total-interests (reductions + interest-amounts)
+            uber-vec (map vector dates months remaining-amounts principal-amounts interest-amounts total-interests)
+            payment-dict-coll (map (payment-dict hoa property-tax-amount additional-payment) uber-vec)
+            payment-dict (zipmap months payment-dict-coll)]
+          payment-dict))))
