@@ -24,3 +24,7 @@
 .segment.forecast {
   margin-top: 1em;
 }
+
+input#forecast-slider {
+  width: 100%
+}

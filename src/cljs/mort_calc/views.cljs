@@ -88,14 +88,14 @@
         current-month (rf/subscribe [:current-month])]
     (fn []
       [:div.slider
-        [:input {:id "amount-slider" :type "range" :value @value :min 1000 :max 3000000 :step 10000 :on-change (dispatch :amount-changed)}]])))
+        [:input {:id "amount-slider" :type "range" :default-value @value :min 1000 :max 3000000 :step 10000 :on-change (dispatch :amount-changed)}]])))
 
 (defn forecast-slider []
   (let [all-payments (rf/subscribe [:all-payments])
-        current-month (rf/subscribe [:current-month])]
+        current-month (rf/subscribe [:limited-current-month])]
     (fn []
       [:div.slider
-        [:input {:id "forecast-slider" :type "range" :value @current-month :min 1 :max (count @all-payments) :step 1 :on-change (dispatch :current-month-changed)}]])))
+        [:input {:id "forecast-slider" :type "range" :default-value @current-month :min 1 :max (count @all-payments) :step 1 :on-change (dispatch :current-month-changed)}]])))
 
 (defn loan-form []
   (fn []
@@ -141,20 +141,34 @@
 (defn to-radians [fraction total]
   (* (/ fraction total) (* 2 js/Math.PI)))
 
+(defn arc-radians [start increment total]
+  [(to-radians start total) (to-radians (+ start increment) total)])
+
+(defn arc-args [start increment total inner-radius outer-radius]
+  (let [[start-radians end-radians] (arc-radians start increment total)]
+    (clj->js {
+              :outerRadius outer-radius
+              :startAngle start-radians
+              :endAngle end-radians
+              :innerRadius inner-radius})))
+
+
+(defn payment-pct [index increment start total]
+  (if (> increment 0)
+    (let [[x y] (.centroid (.arc js/d3) (arc-args start increment total 0 185))]
+      (.log js/console "Point" x y)
+      ^{:key (str "pct-" index)}[:text {:x x :y y :text-anchor "middle" :alignment-baseline "middle"}
+                                  (str (.round js/Math (* 100 (/ increment total))) "%")])))
+
+
 (defn payment-slice [index increment start total fill]
   (if (> increment 0)
-    ^{:key index}[:path {:d ((.arc js/d3) (clj->js
-                                            {
-                                              :innerRadius 40
-                                              :outerRadius 75
-                                              :startAngle (to-radians start total)
-                                              :endAngle (to-radians (+ start increment) total)}))
-                         :fill fill}]))
+    ^{:key (str "slice-" index)}[:path {:d ((.arc js/d3) (arc-args start increment total 0 75))
+                                        :fill fill}]))
 
 (def payment-fills ["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"])
 (def payment-labels ["Principal" "Interest" "Property Tax" "HOA" "Additional Payment"])
 (def year-month-formatter (f/formatter "MMM yyyy"))
-
 
 (defn payment-slices [payment-info]
   (let [values (get payment-info :payment-breakdown)
@@ -162,10 +176,13 @@
         zipped (map vector values cumulative)
         indexed (map-indexed vector zipped)
         total (reduce + values)]
-    [:g {:transform "translate(75, 75)"}
+    [:g {:transform "translate(110, 105)"}
       (for [item indexed]
         (let [[index [increment start]] item]
-          (payment-slice index increment start total (get payment-fills index))))]))
+          ^{:key index}[:g
+                        [payment-slice index increment start total (get payment-fills index)]
+                        [payment-pct index increment start total]]))]))
+
 
 (defn payment-legend [payment-info]
   (let [values (get payment-info :payment-breakdown)
@@ -174,76 +191,64 @@
       [:g {:transform "translate(180, 20)"}
         (for [item indexed]
           (let [[index value] item]
-            ^{:key index}[:g
+            ^{:key index}[:g {:transform "translate(45,0)"}
                           [:rect {:height "0.7em" :width "0.7em" :x "0em" :y (str (- (* index 1) 0.7) "em") :fill (get payment-fills index)}]
                           [:text {:y (str (* index 1) "em") :x "1em"}
                             (get payment-labels index)]]))]))
 
+(defn format-date-mmm-yyyy [date]
+  (f/unparse-local-date year-month-formatter date))
+
 (defn payment-drilldown []
   (let [all-payments (rf/subscribe [:all-payments])
-        current-month (rf/subscribe [:current-month])]
+        current-month (rf/subscribe [:limited-current-month])]
     (fn []
       (let [payment-info (get @all-payments @current-month)
-            months (keys @all-payments)]
+            months (keys @all-payments)
+            max-month (apply max months)
+            [principal interest] (get payment-info :payment-breakdown)
+            {:keys [remaining-amount total-interest]} payment-info
+            adjusted-principal (if (< remaining-amount principal) remaining-amount principal)
+            payoff-date (get-in @all-payments [max-month :date])
+            stats [
+                    ["Principal" adjusted-principal format]
+                    ["Interest" interest format]
+                    ["Remaining Amount" remaining-amount format]
+                    ["Interest Paid" total-interest format]
+                    ["Pay-off Date" payoff-date format-date-mmm-yyyy]]]
         [:div.ui.segment.forecast
           [:div.ui.dividing.header
             "Forecast"]
-;;(f/unparse-local-date year-month-formatter (get payment-info :date))
           [:div.ui.grid
+            [:div.column.center.aligned.sixteen.wide
+              [:h2.header
+                (format-date-mmm-yyyy (get payment-info :date))]]
             [:div.two.column.row
               [:div.column
-                [:div
-                  [:h2.ui.center.aligned.header
-                    (f/unparse-local-date year-month-formatter (get payment-info :date))]
-                  [:table.ui.definition.table
-                    [:tbody
-                      [:tr
-                        [:td "Principal"]
-                        [:td (format (get (get payment-info :payment-breakdown) 0))]]
-                      [:tr
-                        [:td "Interest"]
-                        [:td (format (get (get payment-info :payment-breakdown) 1))]]
-                      [:tr
-                        [:td "Remaining Amount"]
-                        [:td (format (get payment-info :remaining-amount))]]
-                      [:tr
-                        [:td "Interest Paid"]
-                        [:td (format (get payment-info :total-interest))]]]]]]
+                [:table.ui.definition.table
+                  [:tbody
+                    (for [[name value formatter] stats]
+                      ^{:key name}[:tr
+                                    [:td.seven.wide name]
+                                    [:td (formatter value)]])]]]
               [:div.column
                 [:div.chart
-                 [:svg {:width 350 :height 150}
+                 [:svg {:width 380 :height 210}
                   [payment-slices payment-info]
                   [payment-legend payment-info]]]]]]
           [:div.one.column.row
             [:div.column
               [forecast-slider]]]]))))
 
-
-
-
-
-
-
-
 (defn main-panel []
    (fn []
      [:div
        [:div.ui.grid
-         [:div.two.column.centered.row
-           [:div.column.five.wide
-             [:div.ui.segment.form
-               [loan-form]]]
-           [:div.column.eleven.wide
-             [:div.one.column.row
-               [:div.column
-                 [:div.ui.segment.payment
-                   [:div.ui.dividing.header "Payment"]
-                   [:div.ui.grid
-                     [:div.one.column.row
-                      [:div.column.center.aligned
-                        [statistics]]]]]]]
-             [:div.one.column.row
-               [:div.column]]
-             [:div.one.column.row
-               [:div.column
-                 [payment-drilldown]]]]]]]))
+         [:div.column.five.wide
+           [:div.ui.segment.form
+             [loan-form]]]
+         [:div.column.eleven.wide
+           [:div.ui.segment.payment
+             [:div.ui.dividing.header "Payment"]
+             [statistics]]
+          [payment-drilldown]]]]))

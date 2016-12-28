@@ -101,6 +101,17 @@
     (parse-int (get-in db [:borrow-data :current-month]))))
 
 (rf/reg-sub
+  :limited-current-month
+  :<- [:current-month]
+  :<- [:all-payments]
+  (fn [[current-month payment-breakdown] [_]]
+    (let [max-month (count payment-breakdown)]
+      (if (> current-month max-month)
+        max-month
+        current-month))))
+
+
+(rf/reg-sub
   :additional-payment
   (fn [db [_]]
     (parse-int (get-in db [:borrow-data :additional-payment]))))
@@ -197,7 +208,8 @@
   :<- [:additional-payment]
   :<- [:hoa]
   :<- [:property-tax-amount]
-  (fn [[P c N r additional-payment hoa property-tax-amount] [_]]
+  :<- [:current-month]
+  (fn [[P c N r additional-payment hoa property-tax-amount current-month] [_]]
     (if
       (and (is-valid P) (is-valid r) (is-valid c) (is-valid N))
       (let [months (range 1 (+ 1 N))
@@ -210,5 +222,6 @@
             total-interests (reductions + interest-amounts)
             uber-vec (map vector dates months remaining-amounts principal-amounts interest-amounts total-interests)
             payment-dict-coll (map (payment-dict hoa property-tax-amount additional-payment) uber-vec)
-            payment-dict (zipmap months payment-dict-coll)]
+            payment-dict (zipmap months payment-dict-coll)
+            max-month (+ 1 (count payment-dict))]
           payment-dict))))
