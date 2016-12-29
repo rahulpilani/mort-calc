@@ -188,24 +188,27 @@
 (defn format-date-mmm-yyyy [date]
   (f/unparse-local-date year-month-formatter date))
 
-(defn slider-scale [months]
-  (let [domain (clj->js [1 (+ 1 months)])
-        rng (clj->js [6 700])]
-    [:svg {:width 710 :height 20}
-      (for [month (cons 1 (range 6 (+ 2 months) 6))]
-        (let [scale (.range (.domain (.scaleLinear js/d3) domain) rng)
-              height (cond (= 0 (mod month 60)) 11 :else 13)]
-          ^{:key month}[:g
-                        ^{:key (str "tick-" month)} [:line {:x1 (scale month) :y1 20 :x2 (scale month) :y2 height :stroke-width 1 :stroke "black"}]
-                        (if (or (= 1 month) (= 0 (mod month 60)))
-                          ^{:key (str "label-" month)} [:text {:x (scale month) :y 10 :text-anchor "middle" :font-size "0.7em"} (.round js/Math (/ month 12))])]))]))
+(defn slider-scale []
+  (let [all-payments (rf/subscribe [:all-payments])]
+    (fn []
+      (let [months (count @all-payments)
+            domain (clj->js [1 (+ 1 months)])
+            rng (clj->js [6 700])]
+        [:svg {:width 710 :height 20}
+          (for [month (cons 1 (range 6 (+ 2 months) 6))]
+            (let [scale (.range (.domain (.scaleLinear js/d3) domain) rng)
+                  height (cond (= 0 (mod month 60)) 11 :else 13)]
+              ^{:key month}[:g
+                            ^{:key (str "tick-" month)} [:line {:x1 (scale month) :y1 20 :x2 (scale month) :y2 height :stroke-width 1 :stroke "black"}]
+                            (if (or (= 1 month) (= 0 (mod month 60)))
+                              ^{:key (str "label-" month)} [:text {:x (scale month) :y 10 :text-anchor "middle" :font-size "0.7em"} (.round js/Math (/ month 12))])]))]))))
 
 (defn forecast-slider []
   (let [all-payments (rf/subscribe [:all-payments])
         current-month (rf/subscribe [:limited-current-month])]
     (fn []
       [:div.slider.forecast
-        [slider-scale (count @all-payments)]
+        [slider-scale]
         [:input {:id "forecast-slider" :type "range" :default-value @current-month :min 1 :max (count @all-payments) :step 1 :on-change (dispatch :current-month-changed)}]])))
 
 
