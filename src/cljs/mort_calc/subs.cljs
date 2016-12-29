@@ -2,22 +2,11 @@
     (:require-macros [reagent.ratom :refer [reaction]])
     (:require
       [re-frame.core :as rf]
-      [cljs-time.core :as t]))
+      [cljs-time.core :as t]
+      [mort-calc.parse-utils :refer [parse-int parse-float]]))
 
 ;;
-(defn parse-num [f a]
-  (if (not= a "")
-    (let [converted (f a)]
-      (if (js/isNaN converted)
-        0
-        converted))
-    ""))
 
-(defn parse-int [a]
-  (parse-num js/parseInt a))
-
-(defn parse-float [a]
-  (parse-num js/parseFloat a))
 
 (defn log-and-return [l x & m]
   (do
@@ -70,6 +59,11 @@
   :amount
   (fn [db _]
     (parse-int (get-in db [:borrow-data :amount]))))
+
+(rf/reg-sub
+  :down-payment-pct
+  (fn [db _]
+    (parse-int (get-in db [:borrow-data :down-payment-pct]))))
 
 (rf/reg-sub
   :rate

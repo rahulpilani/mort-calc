@@ -2,9 +2,11 @@
 
 (def default-db
   {
+    :loan-amount-linked true
     :borrow-data
       {
         :amount "400000"
+        :down-payment-pct "20"
         :rate "3.625"
         :term "30"
         :additional-payment "0"

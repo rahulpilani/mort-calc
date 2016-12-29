@@ -1,6 +1,7 @@
 (ns mort-calc.events
     (:require [re-frame.core :as rf]
-              [mort-calc.db :as db]))
+              [mort-calc.db :as db]
+              [mort-calc.parse-utils :refer [parse-int parse-float]]))
 
 (rf/reg-event-db
  :initialize-db
@@ -12,10 +13,26 @@
 (defn sanitize-float [n]
   (clojure.string/replace n #"[^0-9.]" ""))
 
+(defn round [n]
+  (.round js/Math n))
+
+(defn is-valid [a] (and (not (js/isNaN a)) (>= a 0)))
 
 (defn handle-amount-changed
   [db [_ amount]]
-  (assoc-in db [:borrow-data :amount] (sanitize-integer amount)))
+  (assoc-in db [:borrow-data :amount] amount))
+  ; (let [home-value (parse-int (get-in db [:home :value]))
+  ;       clean-amount (sanitize-integer amount)
+  ;       int-amount (parse-int clean-amount)
+  ;       down-payment-pct (if (and (is-valid home-value) (is-valid int-amount)) (round (* (/ (- home-value int-amount) home-value) 100)) "")]
+  ;   (do
+  ;     (assoc-in db [:borrow-data :amount] clean-amount)
+  ;     (assoc-in db [:borrow-data :down-payment-pct] down-payment-pct))))
+
+
+(defn handle-down-payment-changed
+  [db [_ down-payment-pct]]
+  (assoc-in db [:borrow-data :down-payment-pct] (sanitize-integer down-payment-pct)))
 
 (defn handle-rate-changed
   [db [_ rate]]
@@ -47,6 +64,7 @@
   (assoc-in db [:borrow-data :current-month] (sanitize-integer current-month)))
 
 (rf/reg-event-db :amount-changed handle-amount-changed)
+(rf/reg-event-db :down-payment-pct-changed handle-down-payment-changed)
 (rf/reg-event-db :rate-changed handle-rate-changed)
 (rf/reg-event-db :term-changed handle-term-changed)
 (rf/reg-event-db :value-changed handle-value-changed)

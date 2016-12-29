@@ -77,6 +77,9 @@
 (defn loan-amount []
   (left-labeled-field :amount "Loan Amount" "Loan Amount" :amount-changed "$"))
 
+(defn down-payment-pct []
+  (right-labeled-field :down-payment-pct "Down Payment" "Down Payment %" :down-payment-pct-changed "%"))
+
 (defn home-value []
   (left-labeled-field :home-value "Home Value" "Home Value" :value-changed "$"))
 
@@ -87,9 +90,11 @@
   (fn []
     [:form.ui.form
       [:div.ui.dividing.header "Loan"]
+      [:div.one.fields
+        [home-value]]
       [:div.two.fields
-        [home-value]
-        [loan-amount]]
+        [loan-amount]
+        [down-payment-pct]]
       [:div.two.fields
         [interest-rate]
         [loan-term]]
