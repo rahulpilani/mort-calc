@@ -1,6 +1,7 @@
 (ns mort-calc.events
     (:require [re-frame.core :as rf]
-              [mort-calc.db :as db]))
+              [mort-calc.db :as db]
+              [mort-calc.parse-utils :refer [parse-int]]))
 
 (rf/reg-event-db
  :initialize-db
@@ -19,11 +20,24 @@
 
 (defn handle-amount-changed
   [db [_ amount]]
-  (assoc-in db [:borrow-data :amount] (sanitize-integer amount)))
+  (let [sanitized-amount (sanitize-integer amount)
+        home-value (parse-int (get-in db [:home :value]))
+        parsed-amount (parse-int sanitized-amount)
+        down-payment-pct-raw (round (* (/ (- home-value parsed-amount) home-value) 100))
+        down-payment-pct (if (is-valid down-payment-pct-raw) down-payment-pct-raw "")
+        db (assoc-in db [:borrow-data :amount] sanitized-amount)
+        db (assoc-in db [:borrow-data :down-payment-pct] down-payment-pct)]
+    db))
 
 (defn handle-down-payment-changed
-  [db [_ down-payment-pct]]
-  (assoc-in db [:borrow-data :down-payment-pct] (sanitize-integer down-payment-pct)))
+  [db [_ pct]]
+  (let [down-payment-pct-raw (sanitize-integer pct)
+        db (assoc-in db [:borrow-data :down-payment-pct] (sanitize-integer down-payment-pct-raw))
+        home-value (parse-int (get-in db [:home :value]))
+        down-payment-pct (parse-int down-payment-pct-raw)
+        amount-raw (round (- home-value (* (/ down-payment-pct 100) home-value)))
+        amount (if (is-valid amount-raw) amount-raw "")]
+    (assoc-in db [:borrow-data :amount] amount)))
 
 (defn handle-rate-changed
   [db [_ rate]]
@@ -35,7 +49,13 @@
 
 (defn handle-value-changed
   [db [_ value]]
-  (assoc-in db [:home :value] (sanitize-integer value)))
+  (let [home-value (sanitize-integer value)
+        db (assoc-in db [:home :value] (sanitize-integer value))
+        down-payment-pct (parse-int (get-in db [:borrow-data :down-payment-pct]))
+        home-value-parsed (parse-int home-value)
+        amount-raw (round (- home-value-parsed (* (/ down-payment-pct 100) home-value-parsed)))
+        amount (if (is-valid amount-raw) amount-raw "")]
+    (assoc-in db [:borrow-data :amount] amount)))
 
 
 (defn handle-property-tax-changed

@@ -146,7 +146,6 @@
 (defn payment-pct [index increment start total]
   (if (> increment 0)
     (let [[x y] (.centroid (.arc js/d3) (arc-args start increment total 0 185))]
-      (.log js/console "Point" x y)
       ^{:key (str "pct-" index)}[:text {:x x :y y :text-anchor "middle" :alignment-baseline "middle"}
                                   (str (.round js/Math (* 100 (/ increment total))) "%")])))
 
@@ -196,7 +195,6 @@
       (for [month (cons 1 (range 6 (+ 2 months) 6))]
         (let [scale (.range (.domain (.scaleLinear js/d3) domain) rng)
               height (cond (= 0 (mod month 60)) 11 :else 13)]
-          (.log js/console month)
           ^{:key month}[:g
                         ^{:key (str "tick-" month)} [:line {:x1 (scale month) :y1 20 :x2 (scale month) :y2 height :stroke-width 1 :stroke "black"}]
                         (if (or (= 1 month) (= 0 (mod month 60)))
