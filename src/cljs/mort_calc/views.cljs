@@ -83,20 +83,6 @@
 (defn additional-payment []
   (left-labeled-field :additional-payment "Extra Payment" "Extra Payment" :additional-payment-changed "$"))
 
-(defn slider []
-  (let [value (rf/subscribe [:amount])
-        current-month (rf/subscribe [:current-month])]
-    (fn []
-      [:div.slider
-        [:input {:id "amount-slider" :type "range" :default-value @value :min 1000 :max 3000000 :step 10000 :on-change (dispatch :amount-changed)}]])))
-
-(defn forecast-slider []
-  (let [all-payments (rf/subscribe [:all-payments])
-        current-month (rf/subscribe [:limited-current-month])]
-    (fn []
-      [:div.slider
-        [:input {:id "forecast-slider" :type "range" :default-value @current-month :min 1 :max (count @all-payments) :step 1 :on-change (dispatch :current-month-changed)}]])))
-
 (defn loan-form []
   (fn []
     [:form.ui.form
@@ -112,8 +98,7 @@
         [property-tax]
         [hoa]]
       [:div.one.fields
-        [additional-payment]]
-      [slider]]))
+        [additional-payment]]]))
 
 (defn monthly-mortgage-payment []
   (statistic :payment "Monthly Mortgage"))
@@ -199,6 +184,28 @@
 (defn format-date-mmm-yyyy [date]
   (f/unparse-local-date year-month-formatter date))
 
+(defn slider-scale [months]
+  (let [domain (clj->js [1 (+ 1 months)])
+        rng (clj->js [6 700])]
+    [:svg {:width 710 :height 20}
+      (for [month (cons 1 (range 6 (+ 2 months) 6))]
+        (let [scale (.range (.domain (.scaleLinear js/d3) domain) rng)
+              height (cond (= 0 (mod month 60)) 11 :else 13)]
+          (.log js/console month)
+          ^{:key month}[:g
+                        ^{:key (str "tick-" month)} [:line {:x1 (scale month) :y1 20 :x2 (scale month) :y2 height :stroke-width 1 :stroke "black"}]
+                        (if (or (= 1 month) (= 0 (mod month 60)))
+                          ^{:key (str "label-" month)} [:text {:x (scale month) :y 10 :text-anchor "middle" :font-size "0.7em"} (.round js/Math (/ month 12))])]))]))
+
+(defn forecast-slider []
+  (let [all-payments (rf/subscribe [:all-payments])
+        current-month (rf/subscribe [:limited-current-month])]
+    (fn []
+      [:div.slider.forecast
+        [slider-scale (count @all-payments)]
+        [:input {:id "forecast-slider" :type "range" :default-value @current-month :min 1 :max (count @all-payments) :step 1 :on-change (dispatch :current-month-changed)}]])))
+
+
 (defn payment-drilldown []
   (let [all-payments (rf/subscribe [:all-payments])
         current-month (rf/subscribe [:limited-current-month])]
@@ -235,9 +242,9 @@
                 [:div.chart
                  [:svg {:width 380 :height 210}
                   [payment-slices payment-info]
-                  [payment-legend payment-info]]]]]]
-          [:div.one.column.row
-            [:div.column
+                  [payment-legend payment-info]]]]]
+
+            [:div.column.sixteen.wide.center.aligned
               [forecast-slider]]]]))))
 
 (defn main-panel []
