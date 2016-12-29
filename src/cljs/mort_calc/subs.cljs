@@ -2,11 +2,21 @@
     (:require-macros [reagent.ratom :refer [reaction]])
     (:require
       [re-frame.core :as rf]
-      [cljs-time.core :as t]
-      [mort-calc.parse-utils :refer [parse-int parse-float]]))
+      [cljs-time.core :as t]))
 
-;;
+(defn parse-num [f a]
+  (if (not= a "")
+    (let [converted (f a)]
+      (if (js/isNaN converted)
+        0
+        converted))
+    ""))
 
+(defn parse-int [a]
+  (parse-num js/parseInt a))
+
+(defn parse-float [a]
+  (parse-num js/parseFloat a)))
 
 (defn log-and-return [l x & m]
   (do

@@ -1,7 +1,6 @@
 (ns mort-calc.events
     (:require [re-frame.core :as rf]
-              [mort-calc.db :as db]
-              [mort-calc.parse-utils :refer [parse-int parse-float]]))
+              [mort-calc.db :as db]))
 
 (rf/reg-event-db
  :initialize-db
@@ -20,15 +19,7 @@
 
 (defn handle-amount-changed
   [db [_ amount]]
-  (assoc-in db [:borrow-data :amount] amount))
-  ; (let [home-value (parse-int (get-in db [:home :value]))
-  ;       clean-amount (sanitize-integer amount)
-  ;       int-amount (parse-int clean-amount)
-  ;       down-payment-pct (if (and (is-valid home-value) (is-valid int-amount)) (round (* (/ (- home-value int-amount) home-value) 100)) "")]
-  ;   (do
-  ;     (assoc-in db [:borrow-data :amount] clean-amount)
-  ;     (assoc-in db [:borrow-data :down-payment-pct] down-payment-pct))))
-
+  (assoc-in db [:borrow-data :amount] (sanitize-integer amount)))
 
 (defn handle-down-payment-changed
   [db [_ down-payment-pct]]
