@@ -16,7 +16,7 @@
   (parse-num js/parseInt a))
 
 (defn parse-float [a]
-  (parse-num js/parseFloat a)))
+  (parse-num js/parseFloat a))
 
 (defn log-and-return [l x & m]
   (do
