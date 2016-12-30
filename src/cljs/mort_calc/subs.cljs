@@ -164,7 +164,7 @@
   :<- [:property-tax-pct]
   (fn [[home-value property-tax-pct] [_]]
     (let [property-tax-amount (find-property-tax home-value property-tax-pct)]
-      (log-and-return "Property Tax" property-tax-amount home-value property-tax-pct))))
+      property-tax-amount)))
 
 (rf/reg-sub
   :taxes-and-fees
@@ -172,7 +172,7 @@
   :<- [:hoa]
   (fn [[property-tax-amount hoa] [_]]
     (let [taxes-and-fees (taxes-and-fees hoa property-tax-amount)]
-      (log-and-return "Taxes and Fees" taxes-and-fees))))
+      taxes-and-fees)))
 
 (rf/reg-sub
   :total-payment
@@ -181,7 +181,7 @@
   :<- [:additional-payment]
   (fn [[taxes-and-fees payment additional-payment] [_]]
     (let [total-payment (total-payment taxes-and-fees payment additional-payment)]
-      (log-and-return "Total Payment" total-payment))))
+      total-payment)))
 
 
 
@@ -192,7 +192,7 @@
   :<- [:rate-pct]
   (fn [[amount term r] [_]]
     (let [payment (payment amount term r)]
-      (log-and-return "Payment" payment))))
+      payment)))
 
 (defn payment-dict [hoa property-tax additional-payment]
   (fn [values]

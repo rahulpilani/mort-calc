@@ -186,7 +186,9 @@
                             (get payment-labels index)]]))]))
 
 (defn format-date-mmm-yyyy [date]
-  (f/unparse-local-date year-month-formatter date))
+  (if (not (nil? date))
+      (f/unparse-local-date year-month-formatter date)
+      ""))
 
 (defn slider-scale []
   (let [all-payments (rf/subscribe [:all-payments])]
