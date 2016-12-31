@@ -2,7 +2,7 @@
 
 (def default-db
   {
-    :loan-amount-linked true
+    :loan-terms [["30" "30 Years"] ["20" "20 Years"] ["15" "15 Years"] ["10" "10 Years"]]
     :borrow-data
       {
         :amount "400000"

@@ -1,7 +1,7 @@
 (ns mort-calc.views
     (:require
       [re-frame.core :as rf]
-      [mort-calc.slider :as s]
+      [mort-calc.dropdown :refer [dropdown]]
       [cljs-time.core :as t]
       [cljs-time.format :as f])
     (:require-macros [reagent.ratom :refer [reaction]]))
@@ -72,7 +72,7 @@
   (right-labeled-field :hoa "HOA" "HOA" :hoa-changed "$/Month"))
 
 (defn loan-term []
-  (right-labeled-field :term "Term" "Loan Term" :term-changed "Years" not-empty-validator not-zero-validator))
+  (dropdown :term :loan-terms "Term" "Loan Term" :term-changed))
 
 (defn loan-amount []
   (left-labeled-field :amount "Loan Amount" "Loan Amount" :amount-changed "$"))

@@ -92,6 +92,11 @@
     (parse-int (get-in db [:borrow-data :term]))))
 
 (rf/reg-sub
+  :loan-terms
+  (fn [db [_]]
+    (get-in db [:loan-terms])))
+
+(rf/reg-sub
   :term-months
   :<- [:term]
   (fn [term [_]]
