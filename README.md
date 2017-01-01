@@ -1,6 +1,6 @@
 # mort-calc
 
-A [re-frame](https://github.com/Day8/re-frame) application designed to ... well, that part is up to you.
+A simple Mortgage Calculator in Clojurescript, Reagent and re-frame.
 
 ## Development Mode
 
@@ -22,5 +22,5 @@ To compile clojurescript to javascript:
 
 ```
 lein clean
-lein cljsbuild once min
+lein cljsbuild once prod
 ```
