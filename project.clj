@@ -19,7 +19,7 @@
   {:dev
    {:dependencies [[binaryage/devtools "0.8.2"]]
 
-    :plugins      [[lein-figwheel "0.5.7"]]}}
+    :plugins      [[lein-figwheel "0.5.7"] [lein-externs "0.1.6"]]}}
 
 
   :cljsbuild
@@ -36,10 +36,11 @@
                     :external-config      {:devtools/config {:features-to-install :all}}}}
 
 
-    {:id           "min"
+    {:id           "prod"
      :source-paths ["src/cljs"]
      :compiler     {:main            mort-calc.core
                     :output-to       "resources/public/js/compiled/app.js"
-                    :optimizations   :advanced
+                    :optimizations :advanced
                     :closure-defines {goog.DEBUG false}
+                    :externs ["resources/externs.js"]
                     :pretty-print    false}}]})
