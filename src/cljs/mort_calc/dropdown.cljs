@@ -5,7 +5,6 @@
 
 (defn dispatch [key]
   (fn [t]
-    (.log js/console "dropdown changed")
     (rf/dispatch [key t])))
 
 (defn dropdown-markup [id list-id place-holder event-key]
